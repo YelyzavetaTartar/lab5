@@ -1,0 +1,49 @@
+#include <iostream>
+#include <string>
+#include <thread>
+#include <future>
+#include <chrono>
+#include <syncstream> // C++20
+
+void slow(const std::string& name) {
+    std::this_thread::sleep_for(std::chrono::seconds(7));
+    std::osyncstream(std::cout) << name << " completed (Slow)\n";
+}
+
+void quick(const std::string& name) {
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    std::osyncstream(std::cout) << name << " completed (Quick)\n";
+}
+
+void run_chain_B() {
+    quick("B1");
+    slow("B2");
+    quick("B3");
+}
+
+void work() {
+    auto start_time = std::chrono::steady_clock::now();
+
+    std::osyncstream(std::cout) << "Starting work (Variant #4)...\n";
+
+    auto future_B = std::async(std::launch::async, run_chain_B);
+
+    quick("A1");
+    slow("A2");
+    quick("A3");
+    future_B.get();
+
+    quick("C");
+
+    auto end_time = std::chrono::steady_clock::now();
+    std::chrono::duration<double> elapsed = end_time - start_time;
+
+    std::osyncstream(std::cout) << "Work is done!\n";
+    std::osyncstream(std::cout) << "Total time: "
+        << elapsed.count() << " seconds.\n";
+}
+
+int main() {
+    work();
+    return 0;
+}
